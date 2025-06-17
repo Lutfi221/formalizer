@@ -733,7 +733,7 @@ if trainer and trainer.model and metric is not None and raw_datasets and DATA_DI
                  bleu_results = {"score": 0.0, "error": "Mismatch or empty lists"}
             else:
                 # Compute BLEU
-                bleu_results = metric.compute(predictions=valid_preds, references=valid_refs_bleu)
+                bleu_results = metric.compute(predictions=valid_preds, references=valid_refs_bleu, lowercase=True)
                 print("\nValidation BLEU Score (from generated predictions):")
                 # Print score nicely, handle potential missing score key
                 print(json.dumps(bleu_results, indent=2))

@@ -222,6 +222,7 @@ SAVE_STEPS = 500   # Save checkpoint every 500 steps
 EVAL_STEPS = 500   # Evaluate every 500 steps (aligned with save steps)
 SAVE_TOTAL_LIMIT = 1 # Keep only the latest 1 checkpoints
 FP16 = torch.cuda.is_available() # Use mixed precision if CUDA is available
+OPTIMIZER = "adafactor"
 
 # --- Output Directories (Set in Section 1 based on Colab/Secrets) ---
 # CHECKPOINT_DIR, FINAL_MODEL_DIR, and DATA_DIR are set in the 'Setup Environment' section
@@ -428,6 +429,7 @@ if tokenized_datasets and CHECKPOINT_DIR: # Need CHECKPOINT_DIR for output
         predict_with_generate=True,         # Needed for generation during eval/predict steps
         generation_max_length=MAX_TARGET_LENGTH, # Set generation length for eval runs
         report_to="none",                   # Disable external reporting unless configured
+        optim=OPTIMIZER,
     )
     print(f"\nTraining arguments configured. Checkpoints will be saved to: {CHECKPOINT_DIR}")
 
@@ -666,7 +668,7 @@ if trainer and trainer.model and tokenized_datasets and metric is not None and r
                  bleu_results = {"score": 0.0, "error": "Mismatch or empty lists"}
             else:
                 # Compute BLEU
-                bleu_results = metric.compute(predictions=valid_preds, references=valid_refs_bleu)
+                bleu_results = metric.compute(predictions=valid_preds, references=valid_refs_bleu, lowercase=True)
                 print("\nValidation BLEU Score (Best Model):")
                 # Print score nicely, handle potential missing score key
                 print(json.dumps(bleu_results, indent=2))
