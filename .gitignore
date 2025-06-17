@@ -4,6 +4,7 @@ repomix-output.xml
 /exports/
 logs/
 *.csv
+/prompting
 
 # Exclude notebooks
 *.ipynb
