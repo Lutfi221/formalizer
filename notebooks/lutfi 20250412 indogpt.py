@@ -194,8 +194,8 @@ print(f"CONTINUE_FROM_LATEST_CHECKPOINT: {CONTINUE_FROM_LATEST_CHECKPOINT}")
 MODEL_CHECKPOINT = "indobenchmark/indogpt"
 
 # --- Data URLs ---
-# BASE_URL = "https://raw.githubusercontent.com/haryoa/stif-indonesia/refs/heads/main/data/labelled/"
-BASE_URL = "https://raw.githubusercontent.com/Lutfi-Azis/lunashimu-formalizer-dataset/refs/heads/main/dataset/"
+BASE_URL = "https://raw.githubusercontent.com/haryoa/stif-indonesia/refs/heads/main/data/labelled/"
+# BASE_URL = "https://raw.githubusercontent.com/Lutfi-Azis/lunashimu-formalizer-dataset/refs/heads/main/dataset/"
 TRAIN_INF_URL = f"{BASE_URL}train.inf"
 TRAIN_FOR_URL = f"{BASE_URL}train.for"
 DEV_INF_URL = f"{BASE_URL}dev.inf"
@@ -205,8 +205,8 @@ TEST_FOR_URL = f"{BASE_URL}test.for"
 
 # --- Preprocessing & Generation ---
 MAX_LENGTH = 128 # Max sequence length for combined informal + formal text + special tokens
-INFORMAL_PREFIX = "informal: "
-FORMAL_PREFIX = " formal: "
+INFORMAL_PREFIX = "Ubahlah kalimat berikut ke dalam bentuk baku: "
+FORMAL_PREFIX = "\nHasil: "
 # Note: The space before "formal:" is important for tokenization
 MAX_NEW_TOKENS_GEN = 64 # Max tokens to generate during inference/evaluation
 
@@ -214,9 +214,9 @@ MAX_NEW_TOKENS_GEN = 64 # Max tokens to generate during inference/evaluation
 LEARNING_RATE = 5e-5
 OPTIMIZER = "adamw_torch" # Options: adamw_torch, adamw_hf, adafactor, etc.
 LR_SCHEDULER = "linear" # Options: linear, cosine, constant, etc.
-TRAIN_BATCH_SIZE = 16 # Adjust based on GPU memory
-EVAL_BATCH_SIZE = 16
-NUM_TRAIN_EPOCHS = 10 # Keep epochs low for initial test
+TRAIN_BATCH_SIZE = 8 # Adjust based on GPU memory
+EVAL_BATCH_SIZE = 8
+NUM_TRAIN_EPOCHS = 5 # Keep epochs low for initial test
 WEIGHT_DECAY = 0.01
 LOGGING_STEPS = 100 # Log metrics every 100 steps
 SAVE_STEPS = 500   # Save checkpoint every 500 steps
