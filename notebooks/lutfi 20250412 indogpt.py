@@ -15,7 +15,7 @@
 # %% [markdown] id="51585975"
 # # Indonesian Text Normalization using Fine-tuned IndoGPT (GPT-2 based)
 #
-# **Version 4:** Integrated Google Drive, Improved Folder Management (Checkpoints, Data, Final Model), Checkpointing, Resume Logic, Data Saving (Metrics, Args, Duration), and Standardized Structure.
+# **Version 5:** Integrated new hyperparameters (Optimizer, LR Scheduler), added `metadata.json` output, and maintained robust Google Drive integration, checkpointing, and data saving.
 
 # %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 20551, "status": "ok", "timestamp": 1744862744202, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="177692dd" outputId="5a41a6e3-f5d6-4968-ec35-e7ca1bbb7f6b"
 # !pip install transformers==4.50.3 evaluate sacrebleu==2.5.1 datasets==3.5.0 torch accelerate sentencepiece google-colab --quiet
@@ -212,6 +212,8 @@ MAX_NEW_TOKENS_GEN = 64 # Max tokens to generate during inference/evaluation
 
 # --- Training ---
 LEARNING_RATE = 5e-5
+OPTIMIZER = "adamw_torch" # Options: adamw_torch, adamw_hf, adafactor, etc.
+LR_SCHEDULER = "linear" # Options: linear, cosine, constant, etc.
 TRAIN_BATCH_SIZE = 16 # Adjust based on GPU memory
 EVAL_BATCH_SIZE = 16
 NUM_TRAIN_EPOCHS = 10 # Keep epochs low for initial test
@@ -448,6 +450,8 @@ if tokenized_datasets and CHECKPOINT_DIR: # Need CHECKPOINT_DIR for output
         logging_strategy="steps",
         logging_steps=LOGGING_STEPS,
         learning_rate=LEARNING_RATE,
+        optim=OPTIMIZER,                    # Use the specified optimizer
+        lr_scheduler_type=LR_SCHEDULER,     # Use the specified learning rate scheduler
         per_device_train_batch_size=TRAIN_BATCH_SIZE,
         per_device_eval_batch_size=EVAL_BATCH_SIZE,
         num_train_epochs=NUM_TRAIN_EPOCHS,
@@ -458,9 +462,6 @@ if tokenized_datasets and CHECKPOINT_DIR: # Need CHECKPOINT_DIR for output
         greater_is_better=False,            # Lower loss is better
         save_total_limit=SAVE_TOTAL_LIMIT,  # Keep only the latest N checkpoints
         report_to="none",                   # Disable external reporting unless configured
-        # Note: predict_with_generate is not directly used by Trainer for Causal LM eval loss,
-        # but might be useful if custom eval needed generation. It's relevant for Seq2Seq.
-        # Generation config is handled separately for post-training eval.
     )
     print(f"\nTraining arguments configured. Checkpoints will be saved to: {CHECKPOINT_DIR}")
 
@@ -474,8 +475,21 @@ if tokenized_datasets and CHECKPOINT_DIR: # Need CHECKPOINT_DIR for output
             print(f"Training arguments saved to {args_save_path}")
         except Exception as e:
             print(f"Warning: Could not save training arguments to {args_save_path}: {e}")
+
+        # --- Save metadata to DATA_DIR ---
+        metadata_path = DATA_DIR / "metadata.json"
+        metadata = {
+            "informal_prefix": INFORMAL_PREFIX,
+            "formal_prefix": FORMAL_PREFIX,
+        }
+        try:
+            with open(metadata_path, 'w') as f:
+                json.dump(metadata, f, indent=4)
+            print(f"Metadata saved to {metadata_path}")
+        except Exception as e:
+            print(f"Warning: Could not save metadata to {metadata_path}: {e}")
     else:
-        print("Warning: DATA_DIR not set. Skipping saving training arguments.")
+        print("Warning: DATA_DIR not set. Skipping saving training arguments and metadata.")
 
 else:
     print("\nSkipping TrainingArguments setup due to missing data or CHECKPOINT_DIR.")
@@ -781,7 +795,7 @@ if trainer and trainer.model and FINAL_MODEL_DIR and SAVE_FINAL_MODEL:
         trainer.save_model(str(FINAL_MODEL_DIR)) # Convert Path to string
         print(f"Final model and tokenizer saved successfully to {FINAL_MODEL_DIR}.")
 
-        # Training arguments were already saved to DATA_DIR in section 6.
+        # Training arguments and metadata were already saved to DATA_DIR in section 6.
         # No need to save them again here.
 
     except Exception as e:
