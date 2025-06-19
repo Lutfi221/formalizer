@@ -15,13 +15,10 @@
 # %% [markdown] id="a624cf4b"
 # # Indonesian Text Normalization using Fine-tuned IndoNanoT5
 #
-# **Version 4:** Integrated Google Drive, Improved Folder Management (Checkpoints, Data, Final Model), Checkpointing, Resume Logic, Data Saving (Metrics, Args, Duration), and Standardized Structure.
+# **Version 5:** Integrated new hyperparameters (Optimizer, LR Scheduler), added `metadata.json` output, and maintained robust Google Drive integration, checkpointing, and data saving.
 
 # %% executionInfo={"elapsed": 10433, "status": "ok", "timestamp": 1750265319738, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="579a411c"
 # !pip install transformers==4.50.3 evaluate sacrebleu==2.5.1 datasets==3.5.0 torch accelerate sentencepiece google-colab --quiet
-
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 2437, "status": "ok", "timestamp": 1750265322185, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="b9IKLr975JPV" outputId="fd5d478d-4eaa-4760-fd56-862483b63ea7"
-# !pip freeze
 
 # %% executionInfo={"elapsed": 5, "status": "ok", "timestamp": 1750265322186, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="18ac1825"
 import json
@@ -70,6 +67,9 @@ DATA_DIR = None        # Data directory Path object
 CONTINUE_FROM_LATEST_CHECKPOINT = False
 SAVE_FINAL_MODEL = True
 
+if torch.cuda.is_available():
+    torch.cuda.reset_peak_memory_stats()
+
 if IS_COLAB:
     from google.colab import drive, userdata
     print("Running in Google Colab environment.")
@@ -116,11 +116,11 @@ if IS_COLAB:
                 print("Required directories ensured.")
 
             else:
-                 print("Error: Could not determine OUTPUT_DIR. Saving/Loading disabled.")
-                 # Keep directories as None
-                 CHECKPOINT_DIR = None
-                 FINAL_MODEL_DIR = None
-                 DATA_DIR = None
+                print("Error: Could not determine OUTPUT_DIR. Saving/Loading disabled.")
+                # Keep directories as None
+                CHECKPOINT_DIR = None
+                FINAL_MODEL_DIR = None
+                DATA_DIR = None
 
             # --- Handle Continuation Flag ---
             continue_flag_secret_name = 'CONTINUE_FROM_LATEST_CHECKPOINT'
@@ -211,6 +211,8 @@ PREFIX = "bakukan: " # T5 task prefix
 
 # --- Training ---
 LEARNING_RATE = 5e-5
+OPTIMIZER = "adamw_torch" # Options: adamw_torch, adamw_hf, adafactor, etc.
+LR_SCHEDULER = "linear" # Options: linear, cosine, constant, etc.
 TRAIN_BATCH_SIZE = 16 # Adjust based on GPU memory
 EVAL_BATCH_SIZE = 16
 NUM_TRAIN_EPOCHS = 5 # Increase epochs slightly
@@ -220,8 +222,6 @@ SAVE_STEPS = 500   # Save checkpoint every 500 steps
 EVAL_STEPS = 500   # Evaluate every 500 steps (aligned with save steps)
 SAVE_TOTAL_LIMIT = 1 # Keep only the latest 1 checkpoints
 FP16 = torch.cuda.is_available() # Use mixed precision if CUDA is available
-OPTIMIZER = "adamw_torch"
-LR_SCHEDULER = "linear"
 
 # --- Output Directories (Set in Section 1 based on Colab/Secrets) ---
 # CHECKPOINT_DIR, FINAL_MODEL_DIR, and DATA_DIR are set in the 'Setup Environment' section
@@ -399,37 +399,37 @@ except Exception as e:
 # Compute metrics function (Only loss during training runs for consistency)
 # We will compute BLEU score separately after training on the best model
 def compute_metrics_loss_only(eval_preds):
-     # Predictions are logits, labels are token IDs
-     # Loss is calculated internally by the Trainer
-     return {} # Return empty dict, we rely on eval_loss
+      # Predictions are logits, labels are token IDs
+      # Loss is calculated internally by the Trainer
+      return {} # Return empty dict, we rely on eval_loss
 
 
 # %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 8, "status": "ok", "timestamp": 1750265339098, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="337c17a8" outputId="33e353ae-fcc2-4da5-8d34-8d8093a3ca81"
 training_args = None
 if tokenized_datasets and CHECKPOINT_DIR: # Need CHECKPOINT_DIR for output
     training_args = Seq2SeqTrainingArguments(
-        output_dir=str(CHECKPOINT_DIR),       # Save checkpoints to Drive/local path
-        evaluation_strategy="steps",        # Evaluate periodically
-        eval_steps=EVAL_STEPS,              # How often to evaluate
-        save_strategy="steps",              # Save periodically
-        save_steps=SAVE_STEPS,              # How often to save
+        output_dir=str(CHECKPOINT_DIR),      # Save checkpoints to Drive/local path
+        evaluation_strategy="steps",       # Evaluate periodically
+        eval_steps=EVAL_STEPS,             # How often to evaluate
+        save_strategy="steps",             # Save periodically
+        save_steps=SAVE_STEPS,             # How often to save
         logging_strategy="steps",
         logging_steps=LOGGING_STEPS,
         learning_rate=LEARNING_RATE,
+        optim=OPTIMIZER,                   # Use the specified optimizer
+        lr_scheduler_type=LR_SCHEDULER,    # Use the specified learning rate scheduler
         per_device_train_batch_size=TRAIN_BATCH_SIZE,
         per_device_eval_batch_size=EVAL_BATCH_SIZE,
         num_train_epochs=NUM_TRAIN_EPOCHS,
         weight_decay=WEIGHT_DECAY,
         fp16=FP16,
-        load_best_model_at_end=True,        # Load the best model based on loss
-        metric_for_best_model="eval_loss",  # Use validation loss to find best checkpoint
-        greater_is_better=False,            # Lower loss is better
-        save_total_limit=SAVE_TOTAL_LIMIT,  # Keep only the latest N checkpoints
-        predict_with_generate=True,         # Needed for generation during eval/predict steps
+        load_best_model_at_end=True,       # Load the best model based on loss
+        metric_for_best_model="eval_loss", # Use validation loss to find best checkpoint
+        greater_is_better=False,           # Lower loss is better
+        save_total_limit=SAVE_TOTAL_LIMIT, # Keep only the latest N checkpoints
+        predict_with_generate=True,        # Needed for generation during eval/predict steps
         generation_max_length=MAX_TARGET_LENGTH, # Set generation length for eval runs
-        report_to="none",                   # Disable external reporting unless configured
-        optim=OPTIMIZER,
-        lr_scheduler_type=LR_SCHEDULER,
+        report_to="none",                  # Disable external reporting unless configured
     )
     print(f"\nTraining arguments configured. Checkpoints will be saved to: {CHECKPOINT_DIR}")
 
@@ -493,14 +493,21 @@ else:
     # Otherwise, normal start, no message needed here.
 
 # %% colab={"base_uri": "https://localhost:8080/", "height": 448} executionInfo={"elapsed": 298935, "status": "ok", "timestamp": 1750265643515, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="2b67adcc" outputId="e28a8f4b-78e0-49f5-ab81-5f790b1456da"
-train_start_time = time.time()
 train_result = None
+training_duration_seconds = 0
+duration_per_epoch = 0
 
 if trainer:
+    if torch.cuda.is_available():
+        print("Emptying CUDA cache before training...")
+        torch.cuda.empty_cache()
+
     print("\nStarting model training...")
+    train_start_time = time.time()
     try:
         if latest_checkpoint_path:
             print(f"Resuming training from: {latest_checkpoint_path}")
+            # Pass the string path
             train_result = trainer.train(resume_from_checkpoint=latest_checkpoint_path)
         else:
             print("Starting training from the beginning.")
@@ -511,13 +518,18 @@ if trainer:
         training_duration_seconds = train_end_time - train_start_time
         print(f"Total training time: {training_duration_seconds:.2f} seconds")
 
-        # Log final training metrics from train_result
-        if train_result:
-            metrics = train_result.metrics
-            metrics["train_duration_seconds"] = training_duration_seconds # Add duration to metrics dict
-            trainer.log_metrics("train_summary", metrics)
 
+        # Log final training metrics from train_result
+        if train_result and NUM_TRAIN_EPOCHS > 0:
+            metrics = train_result.metrics
+            metrics["train_duration_seconds"] = training_duration_seconds # Add duration
+            trainer.log_metrics("train_summary", metrics)
+            # trainer.save_metrics("train", metrics) # Optional: Saves metrics.json in checkpoint dir
+            # trainer.save_state() # Saves trainer state (including logs) in checkpoint dir
+
+            duration_per_epoch = training_duration_seconds / NUM_TRAIN_EPOCHS
             print(f"Training summary metrics: {metrics}")
+            print(f"Duration per epoch: {duration_per_epoch:.2f} seconds")
 
             # --- Save training summary metrics and log history to DATA_DIR ---
             if DATA_DIR:
@@ -532,6 +544,7 @@ if trainer:
                     print(f"Warning: Could not save summary metrics: {e}")
 
                 try:
+                    # Access log history from trainer state
                     log_history = trainer.state.log_history
                     with open(log_history_path, 'w') as f:
                         json.dump(log_history, f, indent=4)
@@ -588,15 +601,15 @@ def generate_seq2seq_predictions(dataset, model_to_eval, tokenizer_to_eval, batc
     for i in range(0, total_examples, batch_size):
         batch = dataset[i : i + batch_size]
         try:
-             # Assuming dataset is indexable and returns dicts or has columns
-             informal_texts = batch["informal"]
-             references = batch["formal"]
+            # Assuming dataset is indexable and returns dicts or has columns
+            informal_texts = batch["informal"]
+            references = batch["formal"]
         except TypeError: # Handle dataset slicing if it returns a list of dicts
-             informal_texts = [item["informal"] for item in batch]
-             references = [item["formal"] for item in batch]
+            informal_texts = [item["informal"] for item in batch]
+            references = [item["formal"] for item in batch]
         except KeyError:
-             print("Error: Could not access 'informal' or 'formal' columns in the batch.")
-             continue # Skip this batch
+            print("Error: Could not access 'informal' or 'formal' columns in the batch.")
+            continue # Skip this batch
 
 
         inputs_with_prefix = [prefix + text for text in informal_texts]
@@ -622,8 +635,8 @@ def generate_seq2seq_predictions(dataset, model_to_eval, tokenizer_to_eval, batc
         if (i // batch_size + 1) % 20 == 0: # Log progress less frequently
             print(f"  Generated for {i + len(batch)} / {total_examples} examples")
             if len(batch_preds) > 0:
-                 print(f"    Sample Ref : {references[0]}")
-                 print(f"    Sample Pred: {batch_preds[0]}")
+                print(f"    Sample Ref : {references[0]}")
+                print(f"    Sample Pred: {batch_preds[0]}")
 
     print(f"Generation complete for {len(all_preds)} examples.")
     return all_preds, all_refs
@@ -661,8 +674,8 @@ if trainer and trainer.model and tokenized_datasets and metric is not None and r
             valid_refs_bleu = [[str(r) if r is not None else ""] for r in references]
 
             if not valid_preds or not valid_refs_bleu or len(valid_preds) != len(valid_refs_bleu):
-                 print(f"Warning: Mismatch in prediction ({len(valid_preds)}) / reference ({len(valid_refs_bleu)}) counts or empty lists. Cannot compute BLEU.")
-                 bleu_results = {"score": 0.0, "error": "Mismatch or empty lists"}
+                print(f"Warning: Mismatch in prediction ({len(valid_preds)}) / reference ({len(valid_refs_bleu)}) counts or empty lists. Cannot compute BLEU.")
+                bleu_results = {"score": 0.0, "error": "Mismatch or empty lists"}
             else:
                 # Compute BLEU
                 bleu_results = metric.compute(predictions=valid_preds, references=valid_refs_bleu, lowercase=True)
@@ -688,7 +701,7 @@ if trainer and trainer.model and tokenized_datasets and metric is not None and r
             validation_eval_df.to_csv(eval_output_path, index=False)
             print(f"Validation predictions saved to {eval_output_path}")
             with open(bleu_output_path, "w") as f:
-                 json.dump(bleu_results, f, indent=4)
+                json.dump(bleu_results, f, indent=4)
             print(f"BLEU results saved to {bleu_output_path}")
 
             # Log BLEU score to trainer state if available (might not be useful after training ends)
@@ -732,7 +745,7 @@ if trainer and trainer.model and FINAL_MODEL_DIR and SAVE_FINAL_MODEL:
     except Exception as e:
         print(f"Error saving final model: {e}")
 elif not FINAL_MODEL_DIR:
-     print("\nSkipping final model saving: FINAL_MODEL_DIR not set.")
+    print("\nSkipping final model saving: FINAL_MODEL_DIR not set.")
 else:
     print("\nSkipping final model saving: (possibly due to training error).")
 
@@ -761,7 +774,7 @@ if FINAL_MODEL_DIR and FINAL_MODEL_DIR.exists():
         inference_model = None
         inference_tokenizer = None
 else:
-     print(f"\nCannot load final model for inference: Directory '{FINAL_MODEL_DIR}' not found or not specified.")
+    print(f"\nCannot load final model for inference: Directory '{FINAL_MODEL_DIR}' not found or not specified.")
 
 
 # %% executionInfo={"elapsed": 13, "status": "ok", "timestamp": 1750265704258, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="1ba761d2"
@@ -801,6 +814,7 @@ def formalize_text_t5(sentence: str, model, tokenizer, prefix=PREFIX, max_gen_le
 
 # %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 3942, "status": "ok", "timestamp": 1750265708202, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="ea2e3123" outputId="e83e4eab-bc17-404a-fa67-82a2e1476c60"
 # Test Inference with the final loaded model
+n_inferred_sentences_per_second = 0
 if inference_model and inference_tokenizer:
     print("\n--- Testing Inference with Final Model ---")
     test_sentences = [
@@ -814,12 +828,20 @@ if inference_model and inference_tokenizer:
     ]
 
     results = []
+    inference_start_time = time.time()
     for sentence in test_sentences:
         formalized = formalize_text_t5(sentence, inference_model, inference_tokenizer, prefix=PREFIX)
         print("-" * 30)
         print(f"Informal: {sentence}")
         print(f"Formal:   {formalized}")
         results.append({"Informal": sentence, "Formal (Predicted)": formalized})
+    inference_end_time = time.time()
+
+    inference_duration = inference_end_time - inference_start_time
+    if inference_duration > 0:
+        n_inferred_sentences_per_second = len(test_sentences) / inference_duration
+    print(f"\nTotal inference time for {len(test_sentences)} sentences: {inference_duration:.2f} seconds")
+    print(f"Inference speed: {n_inferred_sentences_per_second:.2f} sentences/second")
 
     # --- Optional: Save inference results to DATA_DIR ---
     if DATA_DIR:
@@ -836,5 +858,37 @@ if inference_model and inference_tokenizer:
 
 else:
     print("\nSkipping inference test because the final model/tokenizer could not be loaded.")
+
+# %% [markdown] id="new-metadata-cell"
+# ## 11. Finalize and Save Metadata
+
+# %%
+# --- Finalize and save all metadata to DATA_DIR ---
+if DATA_DIR:
+    print("\n--- Finalizing Metadata ---")
+    max_gpu_memory_usage_bytes = 0
+    if torch.cuda.is_available():
+        max_gpu_memory_usage_bytes = torch.cuda.max_memory_allocated()
+        print(f"Max GPU memory usage: {max_gpu_memory_usage_bytes / (1024**2):.2f} MB")
+    else:
+        print("No GPU used, max_gpu_memory_usage will be 0.")
+
+    metadata = {
+        "prefix": PREFIX,
+        "training_duration": round(training_duration_seconds, 2),
+        "duration_per_epoch": round(duration_per_epoch, 2),
+        "n_inferred_sentences_per_second": round(n_inferred_sentences_per_second, 2),
+        "max_gpu_memory_usage": max_gpu_memory_usage_bytes
+    }
+    metadata_path = DATA_DIR / "metadata.json"
+    try:
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f, indent=4)
+        print(f"Final metadata saved to {metadata_path}")
+    except Exception as e:
+        print(f"Warning: Could not save final metadata to {metadata_path}: {e}")
+else:
+    print("\nWarning: DATA_DIR not set. Skipping saving final metadata.")
+
 
 print("\n--- Script Execution Finished ---")
