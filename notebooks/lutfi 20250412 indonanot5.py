@@ -23,7 +23,7 @@
 # %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 2437, "status": "ok", "timestamp": 1750265322185, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="b9IKLr975JPV" outputId="fd5d478d-4eaa-4760-fd56-862483b63ea7"
 # !pip freeze
 
-# %% id="18ac1825" executionInfo={"status": "ok", "timestamp": 1750265322186, "user_tz": -420, "elapsed": 5, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}}
+# %% executionInfo={"elapsed": 5, "status": "ok", "timestamp": 1750265322186, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="18ac1825"
 import json
 import os
 import re # For finding latest checkpoint
@@ -190,7 +190,7 @@ print(f"CONTINUE_FROM_LATEST_CHECKPOINT: {CONTINUE_FROM_LATEST_CHECKPOINT}")
 # %% [markdown] id="5d320747"
 # ## 2. Configuration
 
-# %% id="91e1646b" executionInfo={"status": "ok", "timestamp": 1750265330516, "user_tz": -420, "elapsed": 21, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}}
+# %% executionInfo={"elapsed": 21, "status": "ok", "timestamp": 1750265330516, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="91e1646b"
 # --- Model ---
 MODEL_CHECKPOINT = "LazarusNLP/IndoNanoT5-base"
 
@@ -229,7 +229,7 @@ LR_SCHEDULER = "linear"
 # %% [markdown] id="e3278c67"
 # ## 3. Load Data
 
-# %% id="6335cc12" executionInfo={"status": "ok", "timestamp": 1750265330539, "user_tz": -420, "elapsed": 21, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}}
+# %% executionInfo={"elapsed": 21, "status": "ok", "timestamp": 1750265330539, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="6335cc12"
 def get_lines(url: str) -> list[str]:
     """Fetches text data line by line from a URL."""
     try:
@@ -306,7 +306,7 @@ except Exception as e:
 # %% [markdown] id="837e4b44"
 # ## 5. Preprocess Data
 
-# %% id="7a85963c" executionInfo={"status": "ok", "timestamp": 1750265335722, "user_tz": -420, "elapsed": 14, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}}
+# %% executionInfo={"elapsed": 14, "status": "ok", "timestamp": 1750265335722, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="7a85963c"
 def preprocess_function(examples):
     if tokenizer is None:
         raise ValueError("Tokenizer is not loaded.")
@@ -468,7 +468,7 @@ else:
 # %% [markdown] id="446bac75"
 # ## 7. Train Model
 
-# %% id="cab441e3" colab={"base_uri": "https://localhost:8080/"} executionInfo={"status": "ok", "timestamp": 1750265344584, "user_tz": -420, "elapsed": 45, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}} outputId="431eab4c-331b-46d0-9be8-151b579a3e08"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 45, "status": "ok", "timestamp": 1750265344584, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="cab441e3" outputId="431eab4c-331b-46d0-9be8-151b579a3e08"
 latest_checkpoint_path = None
 if CONTINUE_FROM_LATEST_CHECKPOINT and CHECKPOINT_DIR and CHECKPOINT_DIR.is_dir():
     print(f"Attempting to find latest checkpoint in {CHECKPOINT_DIR} to resume training...")
@@ -560,7 +560,7 @@ else:
 # %% [markdown] id="ad23838a"
 # ## 8. Evaluate Model (BLEU Score)
 
-# %% id="4130dd5c" executionInfo={"status": "ok", "timestamp": 1750265643560, "user_tz": -420, "elapsed": 37, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}}
+# %% executionInfo={"elapsed": 37, "status": "ok", "timestamp": 1750265643560, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="4130dd5c"
 def generate_seq2seq_predictions(dataset, model_to_eval, tokenizer_to_eval, batch_size=EVAL_BATCH_SIZE, max_gen_length=MAX_TARGET_LENGTH, prefix=PREFIX):
     """Generates predictions using the fine-tuned Seq2Seq model."""
     if not model_to_eval or not tokenizer_to_eval:
@@ -764,7 +764,7 @@ else:
      print(f"\nCannot load final model for inference: Directory '{FINAL_MODEL_DIR}' not found or not specified.")
 
 
-# %% id="1ba761d2" executionInfo={"status": "ok", "timestamp": 1750265704258, "user_tz": -420, "elapsed": 13, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}}
+# %% executionInfo={"elapsed": 13, "status": "ok", "timestamp": 1750265704258, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="1ba761d2"
 def formalize_text_t5(sentence: str, model, tokenizer, prefix=PREFIX, max_gen_len=MAX_TARGET_LENGTH):
     """Uses the loaded fine-tuned T5 model to convert informal text to formal."""
     if not model or not tokenizer:

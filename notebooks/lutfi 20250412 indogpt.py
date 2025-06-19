@@ -69,6 +69,9 @@ DATA_DIR = None        # Data directory Path object
 CONTINUE_FROM_LATEST_CHECKPOINT = False
 SAVE_FINAL_MODEL = True
 
+if torch.cuda.is_available():
+    torch.cuda.reset_peak_memory_stats()
+
 if IS_COLAB:
     from google.colab import drive, userdata
     print("Running in Google Colab environment.")
@@ -475,21 +478,8 @@ if tokenized_datasets and CHECKPOINT_DIR: # Need CHECKPOINT_DIR for output
             print(f"Training arguments saved to {args_save_path}")
         except Exception as e:
             print(f"Warning: Could not save training arguments to {args_save_path}: {e}")
-
-        # --- Save metadata to DATA_DIR ---
-        metadata_path = DATA_DIR / "metadata.json"
-        metadata = {
-            "informal_prefix": INFORMAL_PREFIX,
-            "formal_prefix": FORMAL_PREFIX,
-        }
-        try:
-            with open(metadata_path, 'w') as f:
-                json.dump(metadata, f, indent=4)
-            print(f"Metadata saved to {metadata_path}")
-        except Exception as e:
-            print(f"Warning: Could not save metadata to {metadata_path}: {e}")
     else:
-        print("Warning: DATA_DIR not set. Skipping saving training arguments and metadata.")
+        print("Warning: DATA_DIR not set. Skipping saving training arguments.")
 
 else:
     print("\nSkipping TrainingArguments setup due to missing data or CHECKPOINT_DIR.")
@@ -538,11 +528,17 @@ else:
     # Otherwise, normal start, no message needed here.
 
 # %% colab={"base_uri": "https://localhost:8080/", "height": 466} executionInfo={"elapsed": 131957, "status": "ok", "timestamp": 1750256868951, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="a7dcb860" outputId="ad9de814-c18c-4601-efdb-6c9158c9a4aa"
-train_start_time = time.time()
 train_result = None
+training_duration_seconds = 0
+duration_per_epoch = 0
 
 if trainer:
+    if torch.cuda.is_available():
+        print("Emptying CUDA cache before training...")
+        torch.cuda.empty_cache()
+
     print("\nStarting model training...")
+    train_start_time = time.time()
     try:
         if latest_checkpoint_path:
             print(f"Resuming training from: {latest_checkpoint_path}")
@@ -559,14 +555,16 @@ if trainer:
 
 
         # Log final training metrics from train_result
-        if train_result:
+        if train_result and NUM_TRAIN_EPOCHS > 0:
             metrics = train_result.metrics
             metrics["train_duration_seconds"] = training_duration_seconds # Add duration
             trainer.log_metrics("train_summary", metrics)
             # trainer.save_metrics("train", metrics) # Optional: Saves metrics.json in checkpoint dir
             # trainer.save_state() # Saves trainer state (including logs) in checkpoint dir
 
+            duration_per_epoch = training_duration_seconds / NUM_TRAIN_EPOCHS
             print(f"Training summary metrics: {metrics}")
+            print(f"Duration per epoch: {duration_per_epoch:.2f} seconds")
 
             # --- Save training summary metrics and log history to DATA_DIR ---
             if DATA_DIR:
@@ -899,6 +897,7 @@ def formalize_text_gpt2(sentence: str, model, tokenizer, max_new_toks=MAX_NEW_TO
 
 # %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 1254, "status": "ok", "timestamp": 1750256897933, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="57240cd0" outputId="17b8e8af-cfa1-4039-ff58-1e99345a3df2"
 # Test Inference with the final loaded model
+n_inferred_sentences_per_second = 0
 if inference_model and inference_tokenizer:
     print("\n--- Testing Inference with Final Model ---")
     test_sentences = [
@@ -912,12 +911,20 @@ if inference_model and inference_tokenizer:
     ]
 
     results = []
+    inference_start_time = time.time()
     for sentence in test_sentences:
         formalized = formalize_text_gpt2(sentence, inference_model, inference_tokenizer)
         print("-" * 30)
         print(f"Informal: {sentence}")
         print(f"Formal:   {formalized}")
         results.append({"Informal": sentence, "Formal (Predicted)": formalized})
+    inference_end_time = time.time()
+
+    inference_duration = inference_end_time - inference_start_time
+    if inference_duration > 0:
+        n_inferred_sentences_per_second = len(test_sentences) / inference_duration
+    print(f"\nTotal inference time for {len(test_sentences)} sentences: {inference_duration:.2f} seconds")
+    print(f"Inference speed: {n_inferred_sentences_per_second:.2f} sentences/second")
 
     # --- Optional: Save inference results to DATA_DIR ---
     if DATA_DIR:
@@ -935,5 +942,38 @@ if inference_model and inference_tokenizer:
 
 else:
     print("\nSkipping inference test because the final model/tokenizer could not be loaded.")
+
+# %% [markdown] id="new-metadata-cell"
+# ## 11. Finalize and Save Metadata
+
+# %%
+# --- Finalize and save all metadata to DATA_DIR ---
+if DATA_DIR:
+    print("\n--- Finalizing Metadata ---")
+    max_gpu_memory_usage_bytes = 0
+    if torch.cuda.is_available():
+        max_gpu_memory_usage_bytes = torch.cuda.max_memory_allocated()
+        print(f"Max GPU memory usage: {max_gpu_memory_usage_bytes / (1024**2):.2f} MB")
+    else:
+        print("No GPU used, max_gpu_memory_usage will be 0.")
+
+    metadata = {
+        "informal_prefix": INFORMAL_PREFIX,
+        "formal_prefix": FORMAL_PREFIX,
+        "training_duration": round(training_duration_seconds, 2),
+        "duration_per_epoch": round(duration_per_epoch, 2),
+        "n_inferred_sentences_per_second": round(n_inferred_sentences_per_second, 2),
+        "max_gpu_memory_usage": max_gpu_memory_usage_bytes
+    }
+    metadata_path = DATA_DIR / "metadata.json"
+    try:
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f, indent=4)
+        print(f"Final metadata saved to {metadata_path}")
+    except Exception as e:
+        print(f"Warning: Could not save final metadata to {metadata_path}: {e}")
+else:
+    print("\nWarning: DATA_DIR not set. Skipping saving final metadata.")
+
 
 print("\n--- Script Execution Finished ---")
