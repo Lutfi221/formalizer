@@ -200,7 +200,7 @@ TRAIN_INF_URL = f"{BASE_URL}train.inf"
 TRAIN_FOR_URL = f"{BASE_URL}train.for"
 DEV_INF_URL = f"{BASE_URL}dev.inf"
 DEV_FOR_URL = f"{BASE_URL}dev.for"
-TEST_INF_URL = f"{BASE_URL}test.inf" # Test set included for potential final evaluation
+TEST_INF_URL = f"{BASE_URL}test.inf"
 TEST_FOR_URL = f"{BASE_URL}test.for"
 
 # --- Preprocessing & Generation ---
