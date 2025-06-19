@@ -208,6 +208,7 @@ TEST_FOR_URL = f"{BASE_URL}test.for"
 MAX_INPUT_LENGTH = 128
 MAX_TARGET_LENGTH = 128
 PREFIX = "bakukan: " # T5 task prefix
+NUM_BEAMS_GEN = 4 # Number of beams for generation
 
 # --- Training ---
 LEARNING_RATE = 5e-5
@@ -590,7 +591,7 @@ def generate_seq2seq_predictions(dataset, model_to_eval, tokenizer_to_eval, batc
     # Generation config (can customize beam search, etc.)
     generation_config = GenerationConfig(
         max_length=max_gen_length, # Use max_length for T5 generate
-        num_beams=32,              # Example beam search
+        num_beams=NUM_BEAMS_GEN,              # Example beam search
         early_stopping=True,
         pad_token_id=tokenizer_to_eval.pad_token_id,
         eos_token_id=tokenizer_to_eval.eos_token_id,
@@ -793,7 +794,7 @@ def formalize_text_t5(sentence: str, model, tokenizer, prefix=PREFIX, max_gen_le
     # Configure generation (consistent with evaluation)
     generation_config = GenerationConfig(
         max_length=max_gen_len, # T5 uses max_length
-        num_beams=32,
+        num_beams=NUM_BEAMS_GEN,
         early_stopping=True,
         pad_token_id=tokenizer.pad_token_id,
         eos_token_id=tokenizer.eos_token_id,
@@ -875,6 +876,7 @@ if DATA_DIR:
 
     metadata = {
         "prefix": PREFIX,
+        "num_beams": NUM_BEAMS_GEN,
         "training_duration": round(training_duration_seconds, 2),
         "duration_per_epoch": round(duration_per_epoch, 2),
         "n_inferred_sentences_per_second": round(n_inferred_sentences_per_second, 2),
