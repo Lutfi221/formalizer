@@ -17,13 +17,13 @@
 #
 # **Version 4:** Integrated Google Drive, Improved Folder Management (Checkpoints, Data, Final Model), Checkpointing, Resume Logic, Data Saving (Metrics, Args, Duration), and Standardized Structure.
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 124580, "status": "ok", "timestamp": 1744604072959, "user": {"displayName": "SHIVA WICAQSANA", "userId": "01009635231454638522"}, "user_tz": -420} id="579a411c" outputId="e24b93a2-7015-4548-a834-af2a7aee49c7"
+# %% executionInfo={"elapsed": 10433, "status": "ok", "timestamp": 1750265319738, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="579a411c"
 # !pip install transformers==4.50.3 evaluate sacrebleu==2.5.1 datasets==3.5.0 torch accelerate sentencepiece google-colab --quiet
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 1562, "status": "ok", "timestamp": 1744604397503, "user": {"displayName": "SHIVA WICAQSANA", "userId": "01009635231454638522"}, "user_tz": -420} id="b9IKLr975JPV" outputId="637169ee-a729-4e4b-8037-8dc9c6539a6b"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 2437, "status": "ok", "timestamp": 1750265322185, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="b9IKLr975JPV" outputId="fd5d478d-4eaa-4760-fd56-862483b63ea7"
 # !pip freeze
 
-# %% executionInfo={"elapsed": 21952, "status": "ok", "timestamp": 1744604477957, "user": {"displayName": "SHIVA WICAQSANA", "userId": "01009635231454638522"}, "user_tz": -420} id="18ac1825"
+# %% id="18ac1825" executionInfo={"status": "ok", "timestamp": 1750265322186, "user_tz": -420, "elapsed": 5, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}}
 import json
 import os
 import re # For finding latest checkpoint
@@ -55,11 +55,10 @@ from transformers import (
     GenerationConfig
 )
 
-
 # %% [markdown] id="a56cb935"
 # ## 1. Setup Environment
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 85869, "status": "ok", "timestamp": 1744604579850, "user": {"displayName": "SHIVA WICAQSANA", "userId": "01009635231454638522"}, "user_tz": -420} id="3a7d0086" outputId="8730ab28-1653-42d2-f3f4-dca20937f34d"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 8295, "status": "ok", "timestamp": 1750265330489, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="3a7d0086" outputId="22344833-b28d-41ed-8939-05ae96a977a1"
 SCRIPT_NAME = "lutfi_20250412_indonanot5" # Updated script name slightly
 
 # --- Google Drive and Secrets ---
@@ -188,17 +187,16 @@ print(f"CONTINUE_FROM_LATEST_CHECKPOINT: {CONTINUE_FROM_LATEST_CHECKPOINT}")
 
 # Now you can use the Path objects CHECKPOINT_DIR, FINAL_MODEL_DIR, and DATA_DIR later in your script
 
-
 # %% [markdown] id="5d320747"
 # ## 2. Configuration
 
-# %% id="91e1646b"
+# %% id="91e1646b" executionInfo={"status": "ok", "timestamp": 1750265330516, "user_tz": -420, "elapsed": 21, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}}
 # --- Model ---
 MODEL_CHECKPOINT = "LazarusNLP/IndoNanoT5-base"
 
 # --- Data URLs ---
-# BASE_URL = "https://raw.githubusercontent.com/haryoa/stif-indonesia/refs/heads/main/data/labelled/"
-BASE_URL = "https://raw.githubusercontent.com/Lutfi-Azis/lunashimu-formalizer-dataset/refs/heads/main/dataset/"
+BASE_URL = "https://raw.githubusercontent.com/haryoa/stif-indonesia/refs/heads/main/data/labelled/"
+# BASE_URL = "https://raw.githubusercontent.com/Lutfi-Azis/lunashimu-formalizer-dataset/refs/heads/main/dataset/"
 TRAIN_INF_URL = f"{BASE_URL}train.inf"
 TRAIN_FOR_URL = f"{BASE_URL}train.for"
 DEV_INF_URL = f"{BASE_URL}dev.inf"
@@ -213,8 +211,8 @@ PREFIX = "bakukan: " # T5 task prefix
 
 # --- Training ---
 LEARNING_RATE = 5e-5
-TRAIN_BATCH_SIZE = 8 # Adjust based on GPU memory
-EVAL_BATCH_SIZE = 8
+TRAIN_BATCH_SIZE = 16 # Adjust based on GPU memory
+EVAL_BATCH_SIZE = 16
 NUM_TRAIN_EPOCHS = 5 # Increase epochs slightly
 WEIGHT_DECAY = 0.01
 LOGGING_STEPS = 100 # Log metrics every 100 steps
@@ -222,16 +220,16 @@ SAVE_STEPS = 500   # Save checkpoint every 500 steps
 EVAL_STEPS = 500   # Evaluate every 500 steps (aligned with save steps)
 SAVE_TOTAL_LIMIT = 1 # Keep only the latest 1 checkpoints
 FP16 = torch.cuda.is_available() # Use mixed precision if CUDA is available
-OPTIMIZER = "adafactor"
+OPTIMIZER = "adamw_torch"
+LR_SCHEDULER = "linear"
 
 # --- Output Directories (Set in Section 1 based on Colab/Secrets) ---
 # CHECKPOINT_DIR, FINAL_MODEL_DIR, and DATA_DIR are set in the 'Setup Environment' section
 
-
 # %% [markdown] id="e3278c67"
 # ## 3. Load Data
 
-# %% id="6335cc12"
+# %% id="6335cc12" executionInfo={"status": "ok", "timestamp": 1750265330539, "user_tz": -420, "elapsed": 21, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}}
 def get_lines(url: str) -> list[str]:
     """Fetches text data line by line from a URL."""
     try:
@@ -243,7 +241,8 @@ def get_lines(url: str) -> list[str]:
         print(f"Error fetching data from {url}: {e}")
         return []
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 2327, "status": "ok", "timestamp": 1744602720495, "user": {"displayName": "Shiva Augusta", "userId": "17123988873835353068"}, "user_tz": -420} id="5b140971" outputId="ba53a37d-f5b9-4921-b12b-3e9e5d64f637"
+
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 2315, "status": "ok", "timestamp": 1750265332857, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="5b140971" outputId="8936ef9e-c3fa-47f6-8474-ef0eca4a89df"
 print("Fetching data...")
 train_inf = get_lines(TRAIN_INF_URL)
 train_for = get_lines(TRAIN_FOR_URL)
@@ -279,11 +278,10 @@ else:
     print("\nSample training example:")
     print(raw_datasets["train"][0])
 
-
 # %% [markdown] id="a011fd30"
 # ## 4. Load Base Tokenizer and Model
 
-# %% colab={"base_uri": "https://localhost:8080/", "height": 403, "referenced_widgets": ["393403fbebfe43659233a2547d1e441c", "c798138db4dd4568b8c64ab5922a2571", "c6b1a578278c429292fb40c6b6212797", "dc1097929fbb40a38ac9888963ace93b", "cd75f7fbd94d448db831ad533f986680", "18f92fddca694645b0b799c7ee0bb3ea", "3e224a84305a48f993f8598d1d169a2f", "7e214d0b22ba4d6e8460164c3263e01c", "fd7925f9bad749eea11b12f73ba6c714", "40ae5cc087e6470eb8e83f4c97853822", "3a9f342859a7415b8af072648d57a2a4", "82b752cd1e6c460396681ea7d1cee9f3", "5883075c5669429187230686baf1bf8e", "18ff8bdb94814ac9b698c19ff2d65018", "e615b27d6b774cadb002ca569baf6001", "19b61ce27b72467aa2e0c6ddd44e420b", "cceef3eea34b4edf8827d28b3fe52bdd", "af3904bdc02349b6bc91be3f4c2e712b", "826f51f242744e4ab10bfe78ab9d99a2", "243e9dcc44af463b8727fb669eb534bc", "1ac3f657a343441fbc3bd949ad5b4432", "dcd73d6760b74423a4abefa23e7df384", "e1e119a3ee0d4a2fb44d8285539e5c28", "c70bddc354374271be37303fd5bd0634", "08d19cf924a044a7ba2f4fb2c605170d", "de8fdc7c4e7e4d3a8a2ef53d914cb161", "cac338fcb64543328ab69a49ce6d4637", "dea15d616fcb43fcabde0b621542328c", "4be4b319dda949cea2324879e683a7d6", "d62fb84d0294423cabe234f3bd4a72ee", "18394e08b7a14cca86d932d2922ba0e9", "e0bc24fe07b14d7781c49894eac11ce0", "64be98981af145b58585e52e38703032", "8a8229b2c69a48c5926915630a00b75b", "9a70f4800fb14fa1bc1b9bf07612863a", "7075d039f1c84abfba43000f4709c44d", "e192a34a0e3c424e890ffc135a457bee", "2d07c1ccfb994d79a098d2b7c23c1e8c", "183a88beefcb4e2d989e94c890e220ef", "f6dc0d7cac96442699b8eb9d795956d6", "92aa9fed0e074eab9f12200567df2499", "9701c752244146febb09130e1bbbf311", "a3a367ac7b984a788b3bae8c4d13ef43", "2e45ec27f3c847f2af316a6ac3d83d61", "44b6887baa1248abb1fdee1a2ccc39b0", "8b49291fc16741babbc2ce0f5bd0f205", "01af968bc61a409088972abe429d8c06", "bec40a79e37544ea9f0330f452330d10", "e169789cf5eb470495fedb47b40792dd", "de52d00601aa44e288b36ed50d367a26", "6a351affadc946ec9ca22fc91bd6c776", "c2c114337ebc46119755838fd6aef2f2", "c8d59b341f4e407a83e86efe527bebca", "eb3a3443c6cd462b93cac6eb15ee47ee", "33ac52aa8bcf433a88b8c66688f35573", "79e2d40ec7a2414eadea31d46465ec2b", "362da50d8b5342a8a2550caaae0ae105", "0b3929a6d27f4aed8f397ef05a08eed4", "b65d5051ab0041bc929f62e53a9d52dd", "2ad0618af3ed479e99616875a0095daa", "00d28b0465d64642b5401c4c65036dc1", "75e37c2cc2614b90b4ea4bbf0795ec56", "94b3b8532889434ca8e7b3e1f777e848", "a6ff1967bfee464e84ca28e626ab59c0", "0476407ce7424619b69e5e9b2c359933", "edfedc0a18c44899a054ae142125566d"]} executionInfo={"elapsed": 12697, "status": "ok", "timestamp": 1744602736087, "user": {"displayName": "Shiva Augusta", "userId": "17123988873835353068"}, "user_tz": -420} id="bd610231" outputId="42f2d7e8-b2cd-4619-9af0-d0e09a59b81e"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 2846, "status": "ok", "timestamp": 1750265335705, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="bd610231" outputId="066e583e-0d0f-4ec9-e942-2b28ca61c8a4"
 tokenizer = None
 model = None
 print(f"\nLoading base tokenizer and model from checkpoint: {MODEL_CHECKPOINT}")
@@ -308,7 +306,7 @@ except Exception as e:
 # %% [markdown] id="837e4b44"
 # ## 5. Preprocess Data
 
-# %% id="7a85963c"
+# %% id="7a85963c" executionInfo={"status": "ok", "timestamp": 1750265335722, "user_tz": -420, "elapsed": 14, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}}
 def preprocess_function(examples):
     if tokenizer is None:
         raise ValueError("Tokenizer is not loaded.")
@@ -336,7 +334,8 @@ def preprocess_function(examples):
     model_inputs["labels"] = labels["input_ids"]
     return model_inputs
 
-# %% colab={"base_uri": "https://localhost:8080/", "height": 235, "referenced_widgets": ["e6a3a16a5a384127916a22f3e1105daf", "783316a5cd374692a922ec8e29e6438d", "d424e00ad3734e52a872a52906a53e20", "3aac43ac16de435fa4f7c40d5a7a1302", "7d42720e28ac436d8c0d396bf1a6740a", "eff3ffe9564448c5b6b1a62f84beb3f1", "7d8f1e3a48fe4a5db64d9d3aa6f2ff0f", "f316397618ec4f158c2339011253f32f", "97bd351813e144b5af3e1dc0ce47804a", "cbf985572b1940efaa26080ae6aa6672", "aa3531f8eaa44d6e847b4289c2e67bf7", "9655b10001014b76bbc9df0bc6a97dad", "8981f04e2cfe4361b1ae44b45e6e3231", "2a845d200ee94bd1acb3b56295c6fb4b", "3c8ba5c1ff5e44258232c8749afb90e6", "dc857f3b3f6c47e38c468e393cc45129", "b2eafd558d9842b897118187d545cb39", "d79c349ee48d46d5bd373af6833715e3", "175bf6d0c58c45a38ef09229d7982d53", "2c027db52cc945d5b762764098ec3894", "f29334104ea14e82b8b2ad0df19e6907", "6610e8154f94441ea3af81134f3afc4e", "b286f218d530414394d0b5b68d96ffe8", "2fa0000bd09f4d94bf4c39de25b706d9", "065998ff1c1a4b8da92d21c9e919a371", "e4910390b5614b4388abc21631082f6e", "4f4f847934de40738d7157906df85668", "56b0a81b0b2f41b099c117743108dcbd", "92c435760d134c55ae9ef1bbca900fce", "44de4e73c6324e878a90b3ed0de0d513", "154b9679b7014fc6b07facff8414169d", "93e3d04ae5704436b408c807d0464004", "650f73767510419da48820708f11b602"]} executionInfo={"elapsed": 590, "status": "ok", "timestamp": 1744602740572, "user": {"displayName": "Shiva Augusta", "userId": "17123988873835353068"}, "user_tz": -420} id="dde7c121" outputId="8d13e4c2-cec3-41d5-caba-4814572278bf"
+
+# %% colab={"base_uri": "https://localhost:8080/", "height": 238, "referenced_widgets": ["b55605b7a50846eba365c2926dcfc1c5", "9f08c7dc2eee40b2ba6d122080043c12", "4989e2e76b6d4849a1b71bf72bfcf850", "5fe7a398ee3c4a3cabe6a0040417ad6b", "ca6955df314e42288ae05143e5c3a897", "ce1c78e9ff014152b52194e731683901", "42696eff8da24210a8c05d191bb78b87", "8f33cc1c49534bd3baadda424854af46", "af29f0fbb9114145b4a46f5d1c5e85c5", "f9a0484045c2455dbaf0c878d78547af", "6792e75bd10b4531be43212225b58170", "4bf4d89110d14d0fb7f1a797ec9e93b5", "b9a3edee7b3a4d2a8a41a1007868e561", "ef5c8fe0e35e4dc7a6ca847b7e73875a", "1e367f39a9be4ab4bdf8eebfcb1b681b", "dbff3be4de4b4eafb0d3a28523b0b39b", "0968192d55254683a56f49bd3c63df63", "d1ece12fb2aa4ad1b0ac355784ab76b6", "f530a2e4e3dd44a3bea363afdc81fb8e", "e4257ebcb42a433fae84d16518c52e33", "d539e8da46ea4434bf10f2d8a70a74bf", "0065b71b552b459abaadae1738a20221", "21a7190a324f47d7b9f60c07d02519d2", "399843c2f25549f290c4460ce19a55e1", "2386d1c5d1974324848c68235b72c658", "d92504f600de41418a3d809bb410a72a", "5f43e61888a84c1fa687cb25df495745", "35d8e7928a954895bef68b76d6f83e01", "de572f270f494d56bcda7d17f28d13c2", "28a44db2daa9472d8d9fe3fbbc31416f", "01b01e44421f4fe3870300a976aac353", "641f7c59f1384c2fb77e76f4d0034a83", "697a66edd25c473cb449922e767c5abd"]} executionInfo={"elapsed": 1919, "status": "ok", "timestamp": 1750265337710, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="dde7c121" outputId="cb5756bb-f226-4038-b49f-051ea9584212"
 tokenized_datasets = None
 if raw_datasets and tokenizer and model:
     print("\nApplying preprocessing...")
@@ -370,11 +369,10 @@ if raw_datasets and tokenizer and model:
 else:
     print("\nSkipping preprocessing due to missing data, tokenizer, or model.")
 
-
 # %% [markdown] id="5a21abd4"
 # ## 6. Setup Training
 
-# %% colab={"base_uri": "https://localhost:8080/", "height": 101, "referenced_widgets": ["6a66cd7c30de499f9f10b872139fe846", "2e8064688259422c8dd72459a79412cb", "d3fe55d0a03a49a5be65362c869d90e0", "2c013756f6f34dde8e29144ab6aded82", "8268519a131e4008b831a63fc2bc1082", "ebeb4d4b22bf489fb50b579e9fa7c2d9", "6562e1496415489fa715f096ecdc3406", "ba2d5ca8b6c140a5812e1cb157681659", "d16cde3cee9b4e779a14491594add908", "031162cf2fd4498bb4ca3f8e910053f2", "eb2c895bd1804862bb598b90cb96e600"]} executionInfo={"elapsed": 1577, "status": "ok", "timestamp": 1744602744483, "user": {"displayName": "Shiva Augusta", "userId": "17123988873835353068"}, "user_tz": -420} id="90f25426" outputId="10adc795-d70a-4de9-839d-92e2f68d8ac6"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 1364, "status": "ok", "timestamp": 1750265339077, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="90f25426" outputId="623bff39-d9be-4048-eebd-9f90067ea244"
 data_collator = None
 metric = None
 
@@ -405,7 +403,8 @@ def compute_metrics_loss_only(eval_preds):
      # Loss is calculated internally by the Trainer
      return {} # Return empty dict, we rely on eval_loss
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 71, "status": "ok", "timestamp": 1744602745577, "user": {"displayName": "Shiva Augusta", "userId": "17123988873835353068"}, "user_tz": -420} id="337c17a8" outputId="87556a97-7d84-4294-d13e-dd2802b9ca20"
+
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 8, "status": "ok", "timestamp": 1750265339098, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="337c17a8" outputId="33e353ae-fcc2-4da5-8d34-8d8093a3ca81"
 training_args = None
 if tokenized_datasets and CHECKPOINT_DIR: # Need CHECKPOINT_DIR for output
     training_args = Seq2SeqTrainingArguments(
@@ -430,6 +429,7 @@ if tokenized_datasets and CHECKPOINT_DIR: # Need CHECKPOINT_DIR for output
         generation_max_length=MAX_TARGET_LENGTH, # Set generation length for eval runs
         report_to="none",                   # Disable external reporting unless configured
         optim=OPTIMIZER,
+        lr_scheduler_type=LR_SCHEDULER,
     )
     print(f"\nTraining arguments configured. Checkpoints will be saved to: {CHECKPOINT_DIR}")
 
@@ -449,8 +449,7 @@ if tokenized_datasets and CHECKPOINT_DIR: # Need CHECKPOINT_DIR for output
 else:
     print("\nSkipping TrainingArguments setup due to missing data or CHECKPOINT_DIR.")
 
-
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 520, "status": "ok", "timestamp": 1744602748070, "user": {"displayName": "Shiva Augusta", "userId": "17123988873835353068"}, "user_tz": -420} id="387d2676" outputId="77f1fe07-add5-411b-8563-66b49dd993d0"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 5484, "status": "ok", "timestamp": 1750265344583, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="387d2676" outputId="41a8f87e-8718-4bd3-81f8-9d69e60cd950"
 trainer = None
 if model and training_args and tokenized_datasets and data_collator and tokenizer:
     trainer = Seq2SeqTrainer(
@@ -466,11 +465,10 @@ if model and training_args and tokenized_datasets and data_collator and tokenize
 else:
     print("\nCannot initialize Trainer due to missing components.")
 
-
 # %% [markdown] id="446bac75"
 # ## 7. Train Model
 
-# %% id="cab441e3"
+# %% id="cab441e3" colab={"base_uri": "https://localhost:8080/"} executionInfo={"status": "ok", "timestamp": 1750265344584, "user_tz": -420, "elapsed": 45, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}} outputId="431eab4c-331b-46d0-9be8-151b579a3e08"
 latest_checkpoint_path = None
 if CONTINUE_FROM_LATEST_CHECKPOINT and CHECKPOINT_DIR and CHECKPOINT_DIR.is_dir():
     print(f"Attempting to find latest checkpoint in {CHECKPOINT_DIR} to resume training...")
@@ -494,7 +492,7 @@ else:
         print(f"Cannot resume: CHECKPOINT_DIR '{CHECKPOINT_DIR}' does not exist or is not a directory.")
     # Otherwise, normal start, no message needed here.
 
-# %% colab={"base_uri": "https://localhost:8080/", "height": 523} executionInfo={"elapsed": 481514, "status": "ok", "timestamp": 1744603234937, "user": {"displayName": "Shiva Augusta", "userId": "17123988873835353068"}, "user_tz": -420} id="2b67adcc" outputId="0fab94a2-d29e-4ff4-ff67-e93eacc23780"
+# %% colab={"base_uri": "https://localhost:8080/", "height": 448} executionInfo={"elapsed": 298935, "status": "ok", "timestamp": 1750265643515, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="2b67adcc" outputId="e28a8f4b-78e0-49f5-ab81-5f790b1456da"
 train_start_time = time.time()
 train_result = None
 
@@ -562,7 +560,7 @@ else:
 # %% [markdown] id="ad23838a"
 # ## 8. Evaluate Model (BLEU Score)
 
-# %% id="4130dd5c"
+# %% id="4130dd5c" executionInfo={"status": "ok", "timestamp": 1750265643560, "user_tz": -420, "elapsed": 37, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}}
 def generate_seq2seq_predictions(dataset, model_to_eval, tokenizer_to_eval, batch_size=EVAL_BATCH_SIZE, max_gen_length=MAX_TARGET_LENGTH, prefix=PREFIX):
     """Generates predictions using the fine-tuned Seq2Seq model."""
     if not model_to_eval or not tokenizer_to_eval:
@@ -579,7 +577,7 @@ def generate_seq2seq_predictions(dataset, model_to_eval, tokenizer_to_eval, batc
     # Generation config (can customize beam search, etc.)
     generation_config = GenerationConfig(
         max_length=max_gen_length, # Use max_length for T5 generate
-        num_beams=4,              # Example beam search
+        num_beams=32,              # Example beam search
         early_stopping=True,
         pad_token_id=tokenizer_to_eval.pad_token_id,
         eos_token_id=tokenizer_to_eval.eos_token_id,
@@ -630,8 +628,7 @@ def generate_seq2seq_predictions(dataset, model_to_eval, tokenizer_to_eval, batc
     print(f"Generation complete for {len(all_preds)} examples.")
     return all_preds, all_refs
 
-
-# %% colab={"base_uri": "https://localhost:8080/", "height": 1000} executionInfo={"elapsed": 44204, "status": "ok", "timestamp": 1744603426726, "user": {"displayName": "Shiva Augusta", "userId": "17123988873835353068"}, "user_tz": -420} id="57e5c7df" outputId="79cbd43d-1222-4d17-b32d-da462143c812"
+# %% colab={"base_uri": "https://localhost:8080/", "height": 1000} executionInfo={"elapsed": 50871, "status": "ok", "timestamp": 1750265694441, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="57e5c7df" outputId="e7b82932-33f8-4fe8-81f7-caa2c39220be"
 # Perform generation and BLEU calculation on the validation set using the *best* model loaded by the trainer
 validation_eval_df = None # Initialize dataframe variable
 if trainer and trainer.model and tokenized_datasets and metric is not None and raw_datasets and DATA_DIR:
@@ -709,7 +706,7 @@ elif not DATA_DIR:
 else:
     print("\nSkipping evaluation (BLEU) due to missing components (trainer, data, metric) or failed training.")
 
-# %% colab={"base_uri": "https://localhost:8080/", "height": 615} executionInfo={"elapsed": 23, "status": "ok", "timestamp": 1744603440776, "user": {"displayName": "Shiva Augusta", "userId": "17123988873835353068"}, "user_tz": -420} id="1vWpsPeXm31W" outputId="f2f6b00c-ad92-43e5-8e50-dffb2676ca4f"
+# %% colab={"base_uri": "https://localhost:8080/", "height": 616} executionInfo={"elapsed": 29, "status": "ok", "timestamp": 1750265694475, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="1vWpsPeXm31W" outputId="3cef97d2-3051-4ead-a487-a08b6a1c2b04"
 # Display the dataframe if it was created
 if validation_eval_df is not None:
     print("\n--- Validation Predictions DataFrame ---")
@@ -717,11 +714,10 @@ if validation_eval_df is not None:
 else:
     print("\nValidation predictions DataFrame was not generated.")
 
-
 # %% [markdown] id="b191666a"
 # ## 9. Save Final Model
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 5929, "status": "ok", "timestamp": 1744603448990, "user": {"displayName": "Shiva Augusta", "userId": "17123988873835353068"}, "user_tz": -420} id="f4123f45" outputId="08d8ba15-adb5-4626-fc3c-05fe62745450"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 7460, "status": "ok", "timestamp": 1750265701940, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="f4123f45" outputId="abfd005b-5b5e-48bc-f95b-ba6fe21ca080"
 if trainer and trainer.model and FINAL_MODEL_DIR and SAVE_FINAL_MODEL:
     print(f"\nSaving the final best model to: {FINAL_MODEL_DIR}")
     try:
@@ -740,11 +736,10 @@ elif not FINAL_MODEL_DIR:
 else:
     print("\nSkipping final model saving: (possibly due to training error).")
 
-
 # %% [markdown] id="2267d9ce"
 # ## 10. Inference
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 981, "status": "ok", "timestamp": 1744603458333, "user": {"displayName": "Shiva Augusta", "userId": "17123988873835353068"}, "user_tz": -420} id="9fa262a9" outputId="d361b817-3546-4356-b967-dec92094506a"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 2312, "status": "ok", "timestamp": 1750265704253, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="9fa262a9" outputId="7fb8e1b8-5995-4fc0-99b5-916ef4059cf0"
 # Load the final model from FINAL_MODEL_DIR for inference
 inference_model = None
 inference_tokenizer = None
@@ -769,7 +764,7 @@ else:
      print(f"\nCannot load final model for inference: Directory '{FINAL_MODEL_DIR}' not found or not specified.")
 
 
-# %% id="1ba761d2"
+# %% id="1ba761d2" executionInfo={"status": "ok", "timestamp": 1750265704258, "user_tz": -420, "elapsed": 13, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}}
 def formalize_text_t5(sentence: str, model, tokenizer, prefix=PREFIX, max_gen_len=MAX_TARGET_LENGTH):
     """Uses the loaded fine-tuned T5 model to convert informal text to formal."""
     if not model or not tokenizer:
@@ -785,7 +780,7 @@ def formalize_text_t5(sentence: str, model, tokenizer, prefix=PREFIX, max_gen_le
     # Configure generation (consistent with evaluation)
     generation_config = GenerationConfig(
         max_length=max_gen_len, # T5 uses max_length
-        num_beams=4,
+        num_beams=32,
         early_stopping=True,
         pad_token_id=tokenizer.pad_token_id,
         eos_token_id=tokenizer.eos_token_id,
@@ -803,7 +798,8 @@ def formalize_text_t5(sentence: str, model, tokenizer, prefix=PREFIX, max_gen_le
         # import traceback; traceback.print_exc() # Uncomment for detailed error
         return f"Error during generation: {e}"
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 3923, "status": "ok", "timestamp": 1744603470257, "user": {"displayName": "Shiva Augusta", "userId": "17123988873835353068"}, "user_tz": -420} id="ea2e3123" outputId="4aa5705b-c7a7-47a5-f957-fb91eef9ecf5"
+
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 3942, "status": "ok", "timestamp": 1750265708202, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="ea2e3123" outputId="e83e4eab-bc17-404a-fa67-82a2e1476c60"
 # Test Inference with the final loaded model
 if inference_model and inference_tokenizer:
     print("\n--- Testing Inference with Final Model ---")

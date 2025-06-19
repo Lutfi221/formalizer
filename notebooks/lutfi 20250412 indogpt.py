@@ -17,11 +17,11 @@
 #
 # **Version 5:** Integrated new hyperparameters (Optimizer, LR Scheduler), added `metadata.json` output, and maintained robust Google Drive integration, checkpointing, and data saving.
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 20551, "status": "ok", "timestamp": 1744862744202, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="177692dd" outputId="5a41a6e3-f5d6-4968-ec35-e7ca1bbb7f6b"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 162862, "status": "ok", "timestamp": 1750255388036, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="177692dd" outputId="52aa3490-6e98-49bb-b761-ff7ab5e799f6"
 # !pip install transformers==4.50.3 evaluate sacrebleu==2.5.1 datasets==3.5.0 torch accelerate sentencepiece google-colab --quiet
 # !pip install git+https://github.com/Lutfi221/indobenchmark-toolkit.git@e49794e34e958b24606ccb2f0ae50772a374c550
 
-# %% executionInfo={"elapsed": 19550, "status": "ok", "timestamp": 1744862763753, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="24f4d22f"
+# %% executionInfo={"elapsed": 24, "status": "ok", "timestamp": 1750256296450, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="24f4d22f"
 import json
 import os
 import re # For finding latest checkpoint
@@ -57,7 +57,7 @@ from transformers import (
 # %% [markdown] id="1d0da3e4"
 # ## 1. Setup Environment
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 8577, "status": "ok", "timestamp": 1744862772332, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="d5b0fe78" outputId="609152e0-ea95-47d8-92e4-87e083de9a5f"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 8542, "status": "ok", "timestamp": 1750256304993, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="d5b0fe78" outputId="d5f221eb-0e42-4c96-ce1d-ba3446c172c5"
 SCRIPT_NAME = "lutfi_20250412_indogpt"
 
 # --- Google Drive and Secrets ---
@@ -189,7 +189,7 @@ print(f"CONTINUE_FROM_LATEST_CHECKPOINT: {CONTINUE_FROM_LATEST_CHECKPOINT}")
 # %% [markdown] id="f157d33c"
 # ## 2. Configuration
 
-# %% executionInfo={"elapsed": 1, "status": "ok", "timestamp": 1744862772338, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="ca05d305"
+# %% executionInfo={"elapsed": 6, "status": "ok", "timestamp": 1750256305001, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="ca05d305"
 # --- Model ---
 MODEL_CHECKPOINT = "indobenchmark/indogpt"
 
@@ -200,13 +200,13 @@ TRAIN_INF_URL = f"{BASE_URL}train.inf"
 TRAIN_FOR_URL = f"{BASE_URL}train.for"
 DEV_INF_URL = f"{BASE_URL}dev.inf"
 DEV_FOR_URL = f"{BASE_URL}dev.for"
-TEST_INF_URL = f"{BASE_URL}test.inf"
+TEST_INF_URL = f"{BASE_URL}test.inf" # Test set included for potential final evaluation
 TEST_FOR_URL = f"{BASE_URL}test.for"
 
 # --- Preprocessing & Generation ---
 MAX_LENGTH = 128 # Max sequence length for combined informal + formal text + special tokens
-INFORMAL_PREFIX = "Ubahlah kalimat berikut ke dalam bentuk baku: "
-FORMAL_PREFIX = "\nHasil: "
+INFORMAL_PREFIX = "informal: "
+FORMAL_PREFIX = " formal: "
 # Note: The space before "formal:" is important for tokenization
 MAX_NEW_TOKENS_GEN = 64 # Max tokens to generate during inference/evaluation
 
@@ -230,7 +230,7 @@ FP16 = torch.cuda.is_available() # Use mixed precision if CUDA is available
 # %% [markdown] id="4c2e36b9"
 # ## 3. Load Data
 
-# %% executionInfo={"elapsed": 1, "status": "ok", "timestamp": 1744862772342, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="432298a3"
+# %% executionInfo={"elapsed": 9, "status": "ok", "timestamp": 1750256305014, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="432298a3"
 def get_lines(url: str) -> list[str]:
     """Fetches text data line by line from a URL."""
     try:
@@ -243,7 +243,7 @@ def get_lines(url: str) -> list[str]:
         return []
 
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 1408, "status": "ok", "timestamp": 1744862773751, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="a7398051" outputId="e8f5724c-2936-40d5-fd57-cd1400971bcb"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 2412, "status": "ok", "timestamp": 1750256307427, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="a7398051" outputId="4a85658f-65c8-4db3-a063-63325cd00fc4"
 print("Fetching data...")
 train_inf = get_lines(TRAIN_INF_URL)
 train_for = get_lines(TRAIN_FOR_URL)
@@ -283,10 +283,10 @@ else:
 # %% [markdown] id="4f61411b"
 # ## 4. Load Base Tokenizer and Model
 
-# %% colab={"base_uri": "https://localhost:8080/", "height": 186} executionInfo={"elapsed": 60, "status": "ok", "timestamp": 1744862773818, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="SUWzUsQwP6w6" outputId="77e351bb-3b29-42da-8509-20c9b285bc23"
+# %% colab={"base_uri": "https://localhost:8080/", "height": 204} executionInfo={"elapsed": 66, "status": "ok", "timestamp": 1750256307495, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="SUWzUsQwP6w6" outputId="cf4979de-4e4e-49cc-b053-f0b65bc695e6"
 AutoModelForCausalLM.from_pretrained
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 4197, "status": "ok", "timestamp": 1744862778017, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="59ee86d9" outputId="b15483f8-4368-4e4c-f9c3-69994c3fbe28"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 2629, "status": "ok", "timestamp": 1750256310127, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="59ee86d9" outputId="c0930413-1400-48e9-d0cb-95c03f1181a6"
 tokenizer = None
 model = None
 print(f"\nLoading specific IndoNLGTokenizer and model from checkpoint: {MODEL_CHECKPOINT}")
@@ -321,7 +321,7 @@ except Exception as e:
 # %% [markdown] id="210d6c53"
 # ## 5. Preprocess Data
 
-# %% executionInfo={"elapsed": 2, "status": "ok", "timestamp": 1744862778020, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="e52211de"
+# %% executionInfo={"elapsed": 33, "status": "ok", "timestamp": 1750256310163, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="e52211de"
 def preprocess_function(examples):
     if tokenizer is None:
         raise ValueError("Tokenizer is not loaded.")
@@ -373,7 +373,7 @@ def preprocess_function(examples):
     return model_inputs
 
 
-# %% colab={"base_uri": "https://localhost:8080/", "height": 369, "referenced_widgets": ["178a66f2be7b4e8d99117c599dfd74b2", "34292e43afde4e818efbdba3b2501fde", "19dc2644172446c6b06abf2e4056b4c2", "25ad19654bb2490092cc83a07651aba1", "98336edd9e694b2a8e29e7b246485305", "cd5b59f29a904724b4a95bfc0e02c3d9", "23246b82429c499cb3770f76568f31d1", "5da9ec7cc43b465590f71c1f037a7085", "6b1f801665df4633a569aa3f1010446d", "88127ef9d3d94a03b21bd22eb89320bd", "dde54cc86c5a4263a75da76e5edab22e", "ba37c4d6a37a415e9e34512ace97a089", "60aac71c89954c24b207bd6f6e8ac901", "10153ce61c6c4a07a3d7853fbfff6f71", "85f1740c433f4ef791a29d3b64e7a5c0", "98ccc1f40ff14fa289b9a8099ba473f3", "8759cc9c6825456a82806318619659a6", "ce7454ebf9a647e192b9a8dcee39609b", "5f2f3e37b6a5407f882965d780405867", "45da3131d9e04c5ab28b9f14d2f0c46f", "fca2771d3e184f118eabef801bcee045", "7325fe22ffcc4619b7fbdead5010e9fa", "059cc64a3b7744f7bb96454edb0469ff", "2d68c6cb49a24ce88e2b27d92f8dbeb0", "889f096195ba4ad1829eec6abea19380", "52d7374a039b4206860b9e5f0d7ec90b", "a79e6e7b7cdd44a8886fccbb4602b675", "90227b26f72b4a3a897a849505dfa622", "389f759270114d3da3562498c060446c", "d771c623756c429ebbca691c7ac619a6", "237874e9a8ee42b28c81970f5a3c31bc", "dd4e21cd2e054fb98c03a0f249b039c3", "693003bf132142509c8d58c4e8af69f7"]} executionInfo={"elapsed": 2979, "status": "ok", "timestamp": 1744862781000, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="b0bb96c9" outputId="c3ab820b-a44f-4e93-feec-8f107cc3d429"
+# %% colab={"base_uri": "https://localhost:8080/", "height": 365, "referenced_widgets": ["d9c1dca38cbc4875b63a133a0269735d", "e74b25475c054212b6e085ffa90b679e", "77d42359a7474a689f09aa4b4f114aba", "a3733b12f8f74459833381665770d5c9", "ad43d20738de45a9a6907d0c6db1d65c", "4f574e9a09ce482bb6bded0e99875697", "5763961f0fa94367801814da1e3326c3", "ba9f999e309f45d78a482911b5eeba00", "d775afca21c2494bb9558d6acb34fed2", "f3862273c12244818c50e481b25610b4", "bfbe7e196cde4e7e9b7b80765e5e0a01", "c506f3d1ed0c4fa48e38d7ed077fbff7", "4e5dea1a347f4e9c836e86188c7bda6d", "cacbf41001ff4e8085f92fa66ba92ac6", "301e528ed6c04b388d571148b0a4638c", "275a76ae94fa4544b390d65188061af3", "59479f2203c8424ebcafef30aa51dae0", "b3edf1de8a174f15b0202b00996c58c8", "3e4bf875810c4b408b0b822bde05b015", "00d41d418c29402980757ab41521c8fc", "4bcc1fae97d34b34bc70f22190b57a76", "d70011ee67014e25a56f82ea79d86d08", "f8f1ff4961044de091aa6ed4475cc583", "bbfd859672f94015b54337e2166dded8", "809a43bacc90479a8bd55db09dc7cfc8", "8bbf07d4959343d59011c993ff447747", "51acb05134af45edafd0f29a5e24eaff", "817f792957fa42cba1a67df429b2f218", "6ae2669edb3e43fb9791c05202abc7a3", "f766287fa4a541b291613f09ef35b110", "41ab1b3aad3e4d74a04bf5e4f94783b9", "ba8fc6b52e884ec9bc7ac875334186fd", "5db562c49ddc42b6bb10958cf6260a04"]} executionInfo={"elapsed": 1981, "status": "ok", "timestamp": 1750256312143, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="b0bb96c9" outputId="3e8cd8c0-1569-44f4-ddc0-1a6fe6a726fe"
 tokenized_datasets = None
 if raw_datasets and tokenizer and model:
     print("\nApplying preprocessing...")
@@ -409,7 +409,7 @@ else:
 # %% [markdown] id="2911ce20"
 # ## 6. Setup Training
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 586, "status": "ok", "timestamp": 1744862781588, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="001d74b0" outputId="8d1e6cb2-c678-4f90-dea8-a8fbdb599102"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 1240, "status": "ok", "timestamp": 1750256736878, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="001d74b0" outputId="9fb00212-5fa7-49af-e3cf-c4100390e3c6"
 data_collator = None
 metric = None
 
@@ -438,7 +438,7 @@ def compute_metrics_loss_only(eval_preds):
      return {} # Return empty dict as BLEU requires generation
 
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 11, "status": "ok", "timestamp": 1744862781729, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="ffd683e5" outputId="6f22d73a-dc9a-41bc-f027-c6960f7c5037"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 30, "status": "ok", "timestamp": 1750256736910, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="ffd683e5" outputId="4639a15c-bacd-4335-a2ae-57c0b456256d"
 training_args = None
 if tokenized_datasets and CHECKPOINT_DIR: # Need CHECKPOINT_DIR for output
     training_args = TrainingArguments(
@@ -494,7 +494,7 @@ if tokenized_datasets and CHECKPOINT_DIR: # Need CHECKPOINT_DIR for output
 else:
     print("\nSkipping TrainingArguments setup due to missing data or CHECKPOINT_DIR.")
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 87, "status": "ok", "timestamp": 1744862781819, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="ea82bdd5" outputId="fe87f677-c3d4-4327-8b9d-e7eb107264c9"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 67, "status": "ok", "timestamp": 1750256736978, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="ea82bdd5" outputId="3eb0127e-8a43-4c9c-9297-53b0d5099d3a"
 trainer = None
 if model and training_args and tokenized_datasets and data_collator and tokenizer:
     trainer = Trainer(
@@ -513,7 +513,7 @@ else:
 # %% [markdown] id="a7864b6a"
 # ## 7. Train Model
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 55, "status": "ok", "timestamp": 1744862781876, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="0561926c" outputId="ed3be467-54fa-4359-8fda-134a71900be8"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 14, "status": "ok", "timestamp": 1750256736993, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="0561926c" outputId="c1bbcab9-95ef-405a-8bc4-210b58602470"
 latest_checkpoint_path = None
 if CONTINUE_FROM_LATEST_CHECKPOINT and CHECKPOINT_DIR and CHECKPOINT_DIR.is_dir():
     print(f"Attempting to find latest checkpoint in {CHECKPOINT_DIR} to resume training...")
@@ -537,7 +537,7 @@ else:
         print(f"Cannot resume: CHECKPOINT_DIR '{CHECKPOINT_DIR}' does not exist or is not a directory.")
     # Otherwise, normal start, no message needed here.
 
-# %% colab={"base_uri": "https://localhost:8080/", "height": 503} executionInfo={"elapsed": 329855, "status": "ok", "timestamp": 1744863111732, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="a7dcb860" outputId="01894e30-8eac-406b-a3e4-8dd97f54cc37"
+# %% colab={"base_uri": "https://localhost:8080/", "height": 466} executionInfo={"elapsed": 131957, "status": "ok", "timestamp": 1750256868951, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="a7dcb860" outputId="ad9de814-c18c-4601-efdb-6c9158c9a4aa"
 train_start_time = time.time()
 train_result = None
 
@@ -611,7 +611,7 @@ else:
 # %% [markdown] id="43c62155"
 # ## 8. Evaluate Model (BLEU Score)
 
-# %% executionInfo={"elapsed": 18, "status": "ok", "timestamp": 1744863111756, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="a36ec275"
+# %% executionInfo={"elapsed": 24, "status": "ok", "timestamp": 1750256868978, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="a36ec275"
 def generate_formal_predictions(dataset, model_to_eval, tokenizer_to_eval, batch_size=EVAL_BATCH_SIZE, max_new_tokens=MAX_NEW_TOKENS_GEN, max_prompt_len=MAX_LENGTH):
     """Generates formal text predictions using the fine-tuned Causal LM."""
     if not model_to_eval or not tokenizer_to_eval:
@@ -697,7 +697,7 @@ def generate_formal_predictions(dataset, model_to_eval, tokenizer_to_eval, batch
     print(f"Generation complete for {len(all_preds)} examples.")
     return all_preds, all_refs
 
-# %% colab={"base_uri": "https://localhost:8080/", "height": 1000} executionInfo={"elapsed": 13363, "status": "ok", "timestamp": 1744863125124, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="34b86b2c" outputId="b7d7f39f-9685-4615-ee47-ee62afb5d69b"
+# %% colab={"base_uri": "https://localhost:8080/", "height": 1000} executionInfo={"elapsed": 22924, "status": "ok", "timestamp": 1750256891904, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="34b86b2c" outputId="d64b3b22-3a64-4e2d-e44d-bc60881e572c"
 # Perform generation and BLEU calculation on the validation set using the *best* model loaded by the trainer
 validation_eval_df = None # Initialize dataframe variable
 if trainer and trainer.model and tokenized_datasets and metric is not None and raw_datasets and DATA_DIR:
@@ -786,7 +786,7 @@ else:
 # %% [markdown] id="4f09ef69"
 # ## 9. Save Final Model
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 8405, "status": "ok", "timestamp": 1744863133526, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="fecaaef7" outputId="e85f3af1-4d37-4426-c6fe-2d98cd9ebf24"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 3721, "status": "ok", "timestamp": 1750256895626, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="fecaaef7" outputId="f3ac9739-4173-4eb3-920e-5c8f5f880d5e"
 if trainer and trainer.model and FINAL_MODEL_DIR and SAVE_FINAL_MODEL:
     print(f"\nSaving the final best model to: {FINAL_MODEL_DIR}")
     try:
@@ -808,7 +808,7 @@ else:
 # %% [markdown] id="945e6ae6"
 # ## 10. Inference
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 1134, "status": "ok", "timestamp": 1744863134665, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="125bd414" outputId="29f47eb7-47f3-4254-ea72-c72fbf641dba"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 1048, "status": "ok", "timestamp": 1750256896675, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="125bd414" outputId="eff11406-390f-4be2-b831-0fc16ff0f052"
 # Load the final model from FINAL_MODEL_DIR for inference
 inference_model = None
 inference_tokenizer = None
@@ -842,7 +842,7 @@ else:
      print(f"\nCannot load final model for inference: Directory '{FINAL_MODEL_DIR}' not found or not specified.")
 
 
-# %% executionInfo={"elapsed": 4, "status": "ok", "timestamp": 1744863134674, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="29812ba1"
+# %% executionInfo={"elapsed": 7, "status": "ok", "timestamp": 1750256896677, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="29812ba1"
 def formalize_text_gpt2(sentence: str, model, tokenizer, max_new_toks=MAX_NEW_TOKENS_GEN, max_len=MAX_LENGTH):
     """Uses the loaded fine-tuned IndoGPT model to convert informal text to formal."""
     if not model or not tokenizer:
@@ -897,7 +897,7 @@ def formalize_text_gpt2(sentence: str, model, tokenizer, max_new_toks=MAX_NEW_TO
         return f"Error during generation: {e}"
 
 
-# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 1371, "status": "ok", "timestamp": 1744863136048, "user": {"displayName": "Ulima Muna Syarifah", "userId": "13021745167065160054"}, "user_tz": -420} id="57240cd0" outputId="556782ea-7620-4187-9775-4ed731095947"
+# %% colab={"base_uri": "https://localhost:8080/"} executionInfo={"elapsed": 1254, "status": "ok", "timestamp": 1750256897933, "user": {"displayName": "Lutfi H", "userId": "07615966780902302652"}, "user_tz": -420} id="57240cd0" outputId="17b8e8af-cfa1-4039-ff58-1e99345a3df2"
 # Test Inference with the final loaded model
 if inference_model and inference_tokenizer:
     print("\n--- Testing Inference with Final Model ---")
